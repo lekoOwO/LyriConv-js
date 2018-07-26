@@ -13,7 +13,7 @@ function search(s, type=1, offset=0) {
 
    let options = {
     method: 'POST',
-    uri: 'http://music.163.com/api/search/get',
+    uri: 'https://music.163.com/api/search/get',
     headers: {
         Cookie: 'appver=2.0.2',
         Referer: 'https://music.163.com'
