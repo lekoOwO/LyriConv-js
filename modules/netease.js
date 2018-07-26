@@ -1,7 +1,6 @@
 const rp = require('request-promise');
 
-function search(s, type, offset) {
-    type = type || 1;
+function search(s, type=1, offset=0) {
     /*  歌曲 : 1
         專輯 : 10
         歌手 : 100
@@ -11,8 +10,6 @@ function search(s, type, offset) {
         歌詞 : 1006
         電台 : 1009
     */
-
-   offset = offset || 0;
 
    let options = {
     method: 'POST',
