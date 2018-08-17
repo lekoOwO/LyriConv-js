@@ -1,19 +1,50 @@
 function migrate(org, t, offset = 10 ** -3) {
     const isDigit = x => !isNaN(Number(x))
-    const add = (num1, num2) => { // 精準加法
-        let num1Digits = (num1.toString().split('.')[1] || '').length;
-        let num2Digits = (num2.toString().split('.')[1] || '').length;
-        let baseNum = Math.pow(10, Math.max(num1Digits, num2Digits));
-        return (num1 * baseNum + num2 * baseNum) / baseNum;
-      }
+
+    const plus = (num1, num2, ...others) => { // 精確加法
+        if (others.length > 0) return plus(plus(num1, num2), others[0], ...others.slice(1));
+        const baseNum = Math.pow(10, Math.max(digitLength(num1), digitLength(num2)));
+        return (times(num1, baseNum) + times(num2, baseNum)) / baseNum;
+    }
+    const digitLength = num => {
+        // Get digit length of e
+        const eSplit = num.toString().split(/[eE]/);
+        const len = (eSplit[0].split('.')[1] || '').length - (+(eSplit[1] || 0));
+        return len > 0 ? len : 0;
+    }
+    const times = (num1, num2, ...others) => { // 精確乘法
+        function checkBoundary(num) {
+            if (num > Number.MAX_SAFE_INTEGER || num < Number.MIN_SAFE_INTEGER) console.warn(`${num} is beyond boundary when transfer to integer, the results may not be accurate`);
+        }
+        function float2Fixed(num){
+            if (num.toString().indexOf('e') === -1) return Number(num.toString().replace('.', ''));
+            const dLen = digitLength(num);
+            return dLen > 0 ? num * Math.pow(10, dLen) : num;
+        }
+        
+        if (others.length > 0) return times(times(num1, num2), others[0], ...others.slice(1));
+        const num1Changed = float2Fixed(num1);
+        const num2Changed = float2Fixed(num2);
+        const baseNum = digitLength(num1) + digitLength(num2);
+        const leftValue = num1Changed * num2Changed;
+      
+        checkBoundary(leftValue);
+      
+        return leftValue / Math.pow(10, baseNum);
+    }
+    const minus = (num1, num2, ...others) => { // 精確減法
+        if (others.length > 0) return minus(minus(num1, num2), others[0], ...others.slice(1));
+        const baseNum = Math.pow(10, Math.max(digitLength(num1), digitLength(num2)));
+        return (times(num1, baseNum) - times(num2, baseNum)) / baseNum;
+    }
     const strip = (x,precision=12) => +parseFloat(x.toPrecision(precision))  // 數字精確化
 
 
-    const tagToTime = tag => isDigit(tag[0]) ? tag.split(':').reverse().reduce((acc, cur, index) => add(acc, Number(cur)*(60**index)), 0) : tag
+    const tagToTime = tag => isDigit(tag[0]) ? tag.split(':').reverse().reduce((acc, cur, index) => plus(acc, Number(cur)*(60**index)), 0) : tag
     const parse = (x, isTranslated=false) => x.split("\n").filter(x => x!='').map(x => /\[(.+?)\](.*)/g.exec(x)).map(x => [tagToTime(x[1]), x[2], isTranslated])
     const timeToTag = seconds => {
         let minute = Math.floor(seconds/60)
-        let second = add(seconds, -minute * 60)
+        let second = minus(seconds, minute * 60)
         return `${minute}:${second}`
     }
     
@@ -59,7 +90,7 @@ function migrate(org, t, offset = 10 ** -3) {
         i = Number(i)
         if (typeof(parsedLyricPairs[i][0]) == 'string') result += `[${parsedLyricPairs[i][0]}]\n`
         else {
-            if (i != parsedLyricPairs.length -1) result += `[${timeToTag(parsedLyricPairs[i][0])}]${parsedLyricPairs[i][1][0]}\n[${timeToTag(add(parsedLyricPairs[i+1][0], -offset))}]${parsedLyricPairs[i][1][1]}\n`
+            if (i != parsedLyricPairs.length -1) result += `[${timeToTag(parsedLyricPairs[i][0])}]${parsedLyricPairs[i][1][0]}\n[${timeToTag(plus(parsedLyricPairs[i+1][0], -offset))}]${parsedLyricPairs[i][1][1]}\n`
             else result += `[${timeToTag(parsedLyricPairs[i][0])}]${parsedLyricPairs[i][1][0]}\n[${timeToTag(parsedLyricPairs[i][0])}]${parsedLyricPairs[i][1][1]}\n`
         }
     }
