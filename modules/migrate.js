@@ -8,10 +8,14 @@ function migrate(org, t, offset = 10 ** -3) {
       }
     const strip = (x,precision=12) => +parseFloat(x.toPrecision(precision))  // 數字精確化
 
-    
+
     const tagToTime = tag => isDigit(tag[0]) ? tag.split(':').reverse().reduce((acc, cur, index) => add(acc, Number(cur)*(60**index)), 0) : tag
     const parse = (x, isTranslated=false) => x.split("\n").filter(x => x!='').map(x => /\[(.+?)\](.*)/g.exec(x)).map(x => [tagToTime(x[1]), x[2], isTranslated])
-    const timeToTag = seconds => new Date(1000 * seconds).toISOString().slice(11, -1);
+    const timeToTag = seconds => {
+        let minute = Math.floor(seconds/60)
+        let second = add(seconds, -minute * 60)
+        return `${minute}:${second}`
+    }
     
     
     // 開始切成 [(tag, lyric)]
