@@ -41,13 +41,35 @@ function migrate(org, t, offset = 10 ** -3) {
 
 
     const tagToTime = tag => isDigit(tag[0]) ? tag.split(':').reverse().reduce((acc, cur, index) => plus(acc, Number(cur)*(60**index)), 0) : tag
-    const parse = (x, isTranslated=false) => x.split("\n").filter(x => x!='').map(x => /\[(.+?)\](.*)/g.exec(x)).map(x => [tagToTime(x[1]), x[2], isTranslated])
+    const parse = (x, isTranslated=false) => {
+        let pLyricLines = x
+            .split("\n").filter(x => x!='')
+            .map(str => {
+                const regex = /\[(\d+:\d+\.\d+)\]/gm;
+                let m, result=[];
+    
+                while ((m = regex.exec(str)) !== null) {
+                    if (m.index === regex.lastIndex) regex.lastIndex++;
+                    result.push(m[1])
+                }
+                result.push(str.match(/.+\]((?:.|^$)*)/)[1])
+                return result
+            })
+        let result = []
+        for (let pLyricLine of pLyricLines) {
+            let lyric = pLyricLine.pop()
+            for (let time of pLyricLine) {
+                result.push([tagToTime(time), lyric, isTranslated])
+            }
+        }
+        return result
+    }
+
     const timeToTag = seconds => {
         let minute = Math.floor(seconds/60)
         let second = minus(seconds, minute * 60)
         return `${minute}:${second}`
     }
-    
     
     // 開始切成 [(tag, lyric)]
 
